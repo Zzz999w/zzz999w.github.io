@@ -1,0 +1,44 @@
+name: Deploy # 工作流名称
+
+on: # 触发条件
+  push:
+    branches: [ "main" ]  # 当推送到 main 分支时触发[reference:7]
+  workflow_dispatch:     # 允许在 Actions 页面手动触发[reference:8]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 根据你的项目选择版本[reference:9]
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci # 或 npm install
+
+      - name: 构建项目
+        run: npm run build # 项目的构建命令
+
+      - name: 上传构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist # 构建产物目录，Vite 默认是 dist
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
